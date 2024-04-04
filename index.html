@@ -29,9 +29,6 @@
   const textInputElement = document.getElementById("add-form-text");
 
 
-  const currentDate = new Date().toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' })
-    + " " + new Date().toLocaleTimeString().slice(0, -3);
-
   const comments = [
     {
       name: 'Глеб Фокин',
@@ -94,18 +91,26 @@
   };
 
   buttonElement.addEventListener('click', () => {
-    if (nameInputElement.value === "") {
+    if (nameInputElement.value.trim() === "") {
       nameInputElement.classList.add("error");
       return;
     } else {
       nameInputElement.classList.remove("error");
     }
-    if (textInputElement.value === "") {
+    if (textInputElement.value.trim() === "") {
       textInputElement.classList.add("error");
       return;
     } else {
       textInputElement.classList.remove("error");
     };
+
+    const date = new Date();
+    const currentDate =
+      date.getDate().toString().padStart(2, '0') + '.' +
+      (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
+      date.getFullYear().toString().slice(-2) + ' ' +
+      date.getHours().toString().padStart(2, '0') + ':' +
+      date.getMinutes().toString().padStart(2, '0');
 
     comments.push(
       {
