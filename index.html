@@ -56,7 +56,7 @@
           <div>${comment.date}</div>
         </div>
         <div class="comment-body">
-          <div class="comment-text">
+          <div class="comment-text" data-index="${index}">
             ${comment.text}
           </div>
         </div>
@@ -64,13 +64,23 @@
           <div class="likes">
             <span class="likes-counter" data-index="${index}">${comment.likeCount}</span>
             <button class="like-button ${classButton}" data-index="${index}"></button>
-          </div>
+          </div> 
         </div>
       </li>`
     }).join("");
 
     initEventListener();
+
+    const commentTexts = document.querySelectorAll('.comment-text');
+    commentTexts.forEach(textElement => {
+      textElement.addEventListener('click', (event) => {
+        const index = event.target.getAttribute('data-index');
+        textInputElement.value = `> ${comments[index].text}: ${comments[index].name}`;
+        textInputElement.focus();
+      });
+    });
   };
+  renderComments();
 
   function initEventListener() {
     const likeButtonElements = document.querySelectorAll(".like-button");
@@ -90,20 +100,25 @@
     };
   };
 
-  buttonElement.addEventListener('click', () => {
-    if (nameInputElement.value.trim() === "") {
-      nameInputElement.classList.add("error");
+  buttonElement.disabled = true;
+  nameInputElement.addEventListener('input', () => {
+    if (nameInputElement.value === '') {
+      buttonElement.disabled = true;
       return;
     } else {
-      nameInputElement.classList.remove("error");
+      buttonElement.disabled = false;
     }
-    if (textInputElement.value.trim() === "") {
+  })
+
+  buttonElement.addEventListener('click', () => {
+      nameInputElement.classList.remove("error");
+      textInputElement.classList.remove("error");
+    
+    if (nameInputElement.value.trim() === "" || textInputElement.value.trim() === "") {
+      nameInputElement.classList.add("error");
       textInputElement.classList.add("error");
       return;
-    } else {
-      textInputElement.classList.remove("error");
-    };
-
+    }
     const date = new Date();
     const currentDate =
       date.getDate().toString().padStart(2, '0') + '.' +
@@ -114,9 +129,17 @@
 
     comments.push(
       {
-        name: nameInputElement.value,
+        name: nameInputElement.value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;") 
+        .replaceAll(">", "&gt;") 
+        .replaceAll("''", "&quot;"),
         date: currentDate,
-        text: textInputElement.value,
+        text: textInputElement.value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;") 
+        .replaceAll(">", "&gt;") 
+        .replaceAll("''", "&quot;"),
         isLiker: false,
         likeCount: 0,
       });
@@ -125,9 +148,16 @@
 
     nameInputElement.value = '';
     textInputElement.value = '';
+    buttonElement.disabled = true;
   });
 
   renderComments();
+
+  document.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      buttonElement.click();
+    }
+  });
 
 </script>
 
