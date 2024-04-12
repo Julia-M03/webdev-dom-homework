@@ -28,41 +28,69 @@
   const nameInputElement = document.getElementById("add-form-name");
   const textInputElement = document.getElementById("add-form-text");
 
-
-  const comments = [
+//старые комментарии 
+  fetch(
+    'https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
     {
-      name: 'Глеб Фокин',
-      date: '12.02.22 12:18',
-      text: 'Это будет первый комментарий на этой странице',
-      isLiked: false,
-      likeCount: 3,
-    },
-
-    {
-      name: 'Варвара Н.',
-      date: '13.02.22 19:22',
-      text: 'Мне нравится как оформлена эта страница! ❤',
-      isLiked: true,
-      likeCount: 75,
+      method: "GET"
     }
-  ];
+  ).then((response) => {
+
+    response.json().then((responseData) => {
+
+      const appComments = responseData.comments.map((comment) => {
+
+        return {
+          name: comment.author.name,
+          date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          comment: comment.text,
+          likesCounter: comment.likes,
+          isLiked: false,
+        };
+
+      });
+
+      comments = appComments;
+
+      console.log(comments);
+
+      renderComments();
+    });
+  });
+
+//пробелы
+  nameInputElement.oninput = () => {
+    if (nameInputElement.value.charAt(0) === ' ') {
+      nameInputElement.value = '';
+    }
+  }
+
+  textInputElement.oninput = () => {
+    if (textInputElement.value.charAt(0) === ' ') {
+      textInputElement.value = '';
+    }
+  }
+
+  let comments = [];
 
   function renderComments() {
     listElement.innerHTML = comments.map((comment, index) => {
       const classButton = comment.isLiked ? "-active-like" : "";
-      return `<li class="comment">
+
+      return `<li class="comment" data-index="${index}">
         <div class="comment-header">
           <div>${comment.name}</div>
           <div>${comment.date}</div>
         </div>
         <div class="comment-body">
+          <p class ="" data-index="${index}"></p>
           <div class="comment-text" data-index="${index}">
-            ${comment.text}
+            ${comment.comment}
           </div>
         </div>
         <div class="comment-footer">
           <div class="likes">
-            <span class="likes-counter" data-index="${index}">${comment.likeCount}</span>
+            <span class="likes-counter" data-index="${index}">${comment.likesCounter}</span>
             <button class="like-button ${classButton}" data-index="${index}"></button>
           </div> 
         </div>
@@ -70,7 +98,7 @@
     }).join("");
 
     initEventListener();
-
+// ответ на комментарий
     const commentTexts = document.querySelectorAll('.comment-text');
     commentTexts.forEach(textElement => {
       textElement.addEventListener('click', (event) => {
@@ -82,17 +110,20 @@
   };
   renderComments();
 
+//лайки
   function initEventListener() {
     const likeButtonElements = document.querySelectorAll(".like-button");
     for (const likeButtonElement of likeButtonElements) {
-      likeButtonElement.addEventListener('click', () => {
+      likeButtonElement.addEventListener('click', event => {
+        event.stopPropagation();
         const index = likeButtonElement.dataset.index
-        if (comments[index].isLiked) {
-          comments[index].isLiked = !comments[index].isLiked
-          comments[index].likeCount--
+
+        if (comments[index].isLiked === false) {
+          comments[index].likesCounter = comments[index].likesCounter + 1;
+          comments[index].isLiked = true;
         } else {
-          comments[index].isLiked = !comments[index].isLiked
-          comments[index].likeCount++
+          comments[index].isLiked = false;
+          comments[index].likesCounter = comments[index].likesCounter -1;
         }
 
         renderComments();
@@ -100,56 +131,55 @@
     };
   };
 
-  buttonElement.disabled = true;
-  nameInputElement.addEventListener('input', () => {
-    if (nameInputElement.value === '') {
-      buttonElement.disabled = true;
-      return;
-    } else {
-      buttonElement.disabled = false;
+
+  function addComent() {
+    if (nameInputElement.value === "" && textInputElement.value === "") {
+      nameInputElement.classList.add("errorinput");
+      textInputElement.classList.add("errorinput");
+      return
+    } else if (nameInputElement.value === "") {
+      nameInputElement.classList.add("errorinput");
+      return
+    } else if (textInputElement.value === "") {
+      textInputElement.classList.add("errorinput");
+      return
     }
+
+
+    fetch('https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: nameInputElement.value
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("''", "&quot;"),
+          text: commintInputElement.value
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("''", "&quot;")
+            .replaceAll("%BEGIN_QUOTE", "<div class='quote'>")
+            .replaceAll("END_QUOTE%", "</div>"),
+        })
+      }
+    ).then(() => {
+      return getComments();
+    })
+    nameInputElement.classList.remove("errorinput");
+    commintInputElement.classList.remove("errorinput");
+  };
+
+  buttonElement.addEventListener("click", addComment);
+
+  nameInputElement.addEventListener("input", () => {
+    buttonElement.disabled = false;
   })
 
-  buttonElement.addEventListener('click', () => {
-      nameInputElement.classList.remove("error");
-      textInputElement.classList.remove("error");
-    
-    if (nameInputElement.value.trim() === "" || textInputElement.value.trim() === "") {
-      nameInputElement.classList.add("error");
-      textInputElement.classList.add("error");
-      return;
-    }
-    const date = new Date();
-    const currentDate =
-      date.getDate().toString().padStart(2, '0') + '.' +
-      (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
-      date.getFullYear().toString().slice(-2) + ' ' +
-      date.getHours().toString().padStart(2, '0') + ':' +
-      date.getMinutes().toString().padStart(2, '0');
-
-    comments.push(
-      {
-        name: nameInputElement.value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;") 
-        .replaceAll(">", "&gt;") 
-        .replaceAll("''", "&quot;"),
-        date: currentDate,
-        text: textInputElement.value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;") 
-        .replaceAll(">", "&gt;") 
-        .replaceAll("''", "&quot;"),
-        isLiker: false,
-        likeCount: 0,
-      });
-
-    renderComments();
-
-    nameInputElement.value = '';
-    textInputElement.value = '';
-    buttonElement.disabled = true;
-  });
+  commintInputElement.addEventListener("input", () => {
+    buttonElement.disabled = false;
+  })
 
   renderComments();
 
