@@ -27,38 +27,39 @@
   const listElement = document.getElementById("list");
   const nameInputElement = document.getElementById("add-form-name");
   const textInputElement = document.getElementById("add-form-text");
+  buttonElement.disabled = true;
 
-//старые комментарии 
-  fetch(
-    'https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
-    {
-      method: "GET"
-    }
-  ).then((response) => {
+  //старые комментарии 
+  function getComments() {
+   return fetch(
+      'https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
+      {
+        method: "GET"
+      }
+    ).then((response) => {
 
-    response.json().then((responseData) => {
+      response.json().then((responseData) => {
 
-      const appComments = responseData.comments.map((comment) => {
+        const appComments = responseData.comments.map((comment) => {
 
-        return {
-          name: comment.author.name,
-          date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          comment: comment.text,
-          likesCounter: comment.likes,
-          isLiked: false,
-        };
+          return {
+            name: comment.author.name,
+            date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            comment: comment.text,
+            likesCounter: comment.likes,
+            isLiked: false,
+          };
+        });
 
+        comments = appComments;
+        console.log(comments);
+        renderComments();
       });
-
-      comments = appComments;
-
-      console.log(comments);
-
-      renderComments();
     });
-  });
+  };
+  getComments();
 
-//пробелы
+  //пробелы
   nameInputElement.oninput = () => {
     if (nameInputElement.value.charAt(0) === ' ') {
       nameInputElement.value = '';
@@ -98,19 +99,19 @@
     }).join("");
 
     initEventListener();
-// ответ на комментарий
+    // ответ на комментарий
     const commentTexts = document.querySelectorAll('.comment-text');
     commentTexts.forEach(textElement => {
       textElement.addEventListener('click', (event) => {
         const index = event.target.getAttribute('data-index');
-        textInputElement.value = `> ${comments[index].text}: ${comments[index].name}`;
+        textInputElement.value = `> ${comments[index].comment}: ${comments[index].name}`;
         textInputElement.focus();
       });
     });
   };
   renderComments();
 
-//лайки
+  //лайки
   function initEventListener() {
     const likeButtonElements = document.querySelectorAll(".like-button");
     for (const likeButtonElement of likeButtonElements) {
@@ -123,7 +124,7 @@
           comments[index].isLiked = true;
         } else {
           comments[index].isLiked = false;
-          comments[index].likesCounter = comments[index].likesCounter -1;
+          comments[index].likesCounter = comments[index].likesCounter - 1;
         }
 
         renderComments();
@@ -132,21 +133,22 @@
   };
 
 
-  function addComent() {
+  function addComment() {
     if (nameInputElement.value === "" && textInputElement.value === "") {
-      nameInputElement.classList.add("errorinput");
-      textInputElement.classList.add("errorinput");
+      nameInputElement.classList.add("error");
+      textInputElement.classList.add("error");
       return
     } else if (nameInputElement.value === "") {
-      nameInputElement.classList.add("errorinput");
+      nameInputElement.classList.add("errort");
       return
     } else if (textInputElement.value === "") {
-      textInputElement.classList.add("errorinput");
+      textInputElement.classList.add("error");
       return
     }
 
 
-    fetch('https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
+    fetch(
+      'https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
       {
         method: "POST",
         body: JSON.stringify({
@@ -155,7 +157,7 @@
             .replaceAll("<", "&lt;")
             .replaceAll(">", "&gt;")
             .replaceAll("''", "&quot;"),
-          text: commintInputElement.value
+          text: textInputElement.value
             .replaceAll("&", "&amp;")
             .replaceAll("<", "&lt;")
             .replaceAll(">", "&gt;")
@@ -167,8 +169,11 @@
     ).then(() => {
       return getComments();
     })
-    nameInputElement.classList.remove("errorinput");
-    commintInputElement.classList.remove("errorinput");
+
+    nameInputElement.value = "";
+    textInputElement.value = "";
+    nameInputElement.classList.remove("error");
+    textInputElement.classList.remove("error");
   };
 
   buttonElement.addEventListener("click", addComment);
@@ -177,17 +182,13 @@
     buttonElement.disabled = false;
   })
 
-  commintInputElement.addEventListener("input", () => {
+  textInputElement.addEventListener("input", () => {
     buttonElement.disabled = false;
   })
 
   renderComments();
 
-  document.addEventListener('keyup', (event) => {
-    if (event.key === 'Enter') {
-      buttonElement.click();
-    }
-  });
+
 
 </script>
 
