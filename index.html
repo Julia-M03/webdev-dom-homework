@@ -9,7 +9,7 @@
 
 <body>
   <div class="container">
-  <div id="loading" style="display: none;">Пожалуйста подождите, загружаю комментарии...</div>
+    <div id="loading" style="display: none;">Пожалуйста подождите, загружаю комментарии...</div>
     <ul id="list" class="comments">
     </ul>
     <div id="loading-comment" style="display: none;">Комментарий добавляется...</div>
@@ -139,14 +139,14 @@
 
   function addComment() {
     if (nameInputElement.value === "" && textInputElement.value === "") {
-      nameInputElement.classList.add("error");
-      textInputElement.classList.add("error");
+      nameInputElement.classList.add("errorinput");
+      textInputElement.classList.add("errorinput");
       return
     } else if (nameInputElement.value === "") {
-      nameInputElement.classList.add("error");
+      nameInputElement.classList.add("errorinput");
       return
     } else if (textInputElement.value === "") {
-      textInputElement.classList.add("error");
+      textInputElement.classList.add("errorinput");
       return
     }
 
@@ -155,10 +155,6 @@
 
     const commentFormElement = document.querySelector('.add-form');
     commentFormElement.style.display = 'none';
-
-    buttonElement.disabled = true;
-    buttonElement.textContent = 'Комментарий добавляется...';
-
 
     fetch(
       'https://wedev-api.sky.pro/api/v1/julia-mangura/comments',
@@ -177,23 +173,42 @@
             .replaceAll("''", "&quot;")
             .replaceAll("%BEGIN_QUOTE", "<div class='quote'>")
             .replaceAll("END_QUOTE%", "</div>"),
+          fonceError: true,
         })
       }
     )
-    .then(() => {
-      return getComments();
-    })
-    .then(() => {
-      buttonElement.disabled = false;
-      buttonElement.textContent = 'Написать';
-      loadingCommentElement.style.display = 'none';
-      commentFormElement.style.display = 'flex';
-    })
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 400) {
+            alert("Имя и комментарий должен быть не короче 3х символов.");
+          } else if (response.status === 500) {
+            alert("Сервер сломался, попробуй позже.");
+          }
+          throw new Error("Ответ сервера не был успешным.");
+        }
+        return response.json();
+      })
+      .then(() => {
+        return getComments();
+      })
+      .then(() => {
+        nameInputElement.value = "";
+        textInputElement.value = "";
+        buttonElement.disabled = true;
+      })
+      .catch(error => {
+        if (error.comment !== `Ответ сервера не был успешным`) {
+          console.error('Возникла проблема с операцией fetch:', error);
+          alert("Кажется, у Вас не работает интернет, попробуйте позже.");
+        }
+      })
+      .finally(() => {
+        loadingCommentElement.style.display = 'none';
+        commentFormElement.style.display = 'flex';
+      })
 
-    nameInputElement.value = "";
-    textInputElement.value = "";
-    nameInputElement.classList.remove("error");
-    textInputElement.classList.remove("error");
+    nameInputElement.classList.remove("errorinput");
+    textInputElement.classList.remove("errorinput");
   };
 
   buttonElement.addEventListener("click", addComment);
