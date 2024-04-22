@@ -173,20 +173,20 @@
             .replaceAll("''", "&quot;")
             .replaceAll("%BEGIN_QUOTE", "<div class='quote'>")
             .replaceAll("END_QUOTE%", "</div>"),
-          fonceError: true,
+          forceError: true,
         })
       }
     )
       .then(response => {
-        if (!response.ok) {
-          if (response.status === 400) {
-            alert("Имя и комментарий должен быть не короче 3х символов.");
-          } else if (response.status === 500) {
-            alert("Сервер сломался, попробуй позже.");
-          }
-          throw new Error("Ответ сервера не был успешным.");
+        console.log(response);
+        if (response.status === 201) {
+          return response.json();
+        } else if (response.status === 400) {
+          alert("Имя и комментарий должен быть не короче 3х символов.");
+        } else if (response.status === 500) {
+          alert("Сервер сломался, попробуй позже.");
         }
-        return response.json();
+        throw new Error("Ответ сервера не был успешным.");
       })
       .then(() => {
         return getComments();
@@ -197,7 +197,7 @@
         buttonElement.disabled = true;
       })
       .catch(error => {
-        if (error.comment !== `Ответ сервера не был успешным`) {
+        if (error.message === "Failed to fetch") {
           console.error('Возникла проблема с операцией fetch:', error);
           alert("Кажется, у Вас не работает интернет, попробуйте позже.");
         }
