@@ -1,16 +1,26 @@
 import { API } from "./api.js"
+import { renderLogin } from "./loginPage.js"
 
 export const DOM = {
+    appElement: document.getElementById("app"),
     buttonElement: document.getElementById("add-form-button"),
     listElement: document.getElementById("list"),
     nameInputElement: document.getElementById("add-form-name"),
     textInputElement: document.getElementById("add-form-text"),
 
+    userName: "",
     comments: [],
+
+    state: {
+        isAutorized: false,
+        isAutorizing: false,
+        isSending: false,
+    },
 
     getComments() {
         const loadingElement = document.getElementById("loading")
-        loadingElement.style.display = 'block'
+        // loadingElement.style.display = 'block'
+        console.log (loadingElement)
 
         API.getComments().then((responseData) => {
             this.comments = responseData.comments.map((comment) => {
@@ -24,19 +34,14 @@ export const DOM = {
             })
 
             console.log(this.comments)
-            this.renderComments()
-            loadingElement.style.display = 'none'
+            this.render()
+            // loadingElement.style.display = 'none'
+        }).catch( (error) => {
+            alert(error.message)
         })
     },
 
     handleInputListeners() {
-        this.nameInputElement.addEventListener("input", () => {
-            if (this.nameInputElement.value.charAt(0) === ' ') {
-                this.nameInputElement.value = ''
-            }
-            this.buttonElement.disabled = false
-        })
-
         this.textInputElement.addEventListener("input", () => {
             if (this.textInputElement.value.charAt(0) === ' ') {
                 this.textInputElement.value = ''
@@ -47,35 +52,25 @@ export const DOM = {
 
     handlePostButton() {
         this.buttonElement.addEventListener("click", () => {
-            if (this.nameInputElement.value === "" && this.textInputElement.value === "") {
-                this.nameInputElement.classList.add("errorinput")
-                this.textInputElement.classList.add("errorinput")
-                return
-            } else if (this.nameInputElement.value === "") {
-                this.nameInputElement.classList.add("errorinput")
-                return
-            } else if (this.textInputElement.value === "") {
+            console.log (this.textInputElement)
+            if (this.textInputElement.value === "") {
+                
                 this.textInputElement.classList.add("errorinput")
                 return
             }
 
-            const loadingCommentElement = document.getElementById("loading-comment")
-            loadingCommentElement.style.display = 'block'
-
-            const commentFormElement = document.querySelector('.add-form')
-            commentFormElement.style.display = 'none'
-
-            API.postComment({
-                name: this.nameInputElement.value,
-                text: this.textInputElement.value,
-            })
+            this.state.isSending = true
+            API.postComment(this.textInputElement.value)
                 .then(() => {
-                    return this.getComments()
+                     this.getComments ()
                 })
                 .then(() => {
-                    this.nameInputElement.value = ""
                     this.textInputElement.value = ""
                     this.buttonElement.disabled = true
+
+                    this.state.isSending = false
+
+                    this.render()
                 })
                 .catch(error => {
                     if (error.message === "Failed to fetch") {
@@ -83,12 +78,7 @@ export const DOM = {
                         alert("Кажется, у Вас не работает интернет, попробуйте позже.")
                     }
                 })
-                .finally(() => {
-                    loadingCommentElement.style.display = 'none'
-                    commentFormElement.style.display = 'flex'
-                })
-
-            this.nameInputElement.classList.remove("errorinput")
+            
             this.textInputElement.classList.remove("errorinput")
         })
     },
@@ -114,13 +104,62 @@ export const DOM = {
         })
     },
 
+    render() {
+
+        if (this.state.isAutorizing) {
+            this.listElement.innerHTML = ``
+
+            renderLogin()
+        }
+        else {
+            this.renderComments()
+
+            if (this.state.isAutorized && this.state.isSending) {
+                this.appElement.innerHTML = `
+                <div id="loading-comment" style="display: none;">Комментарий добавляется...</div>
+                `
+            }
+            else if (this.state.isAutorized) {
+                this.appElement.innerHTML = `
+                <div class="add-form">
+                    <input id="add-form-name" type="text" class="add-form-name" placeholder="Введите ваше имя" value="${this.userName}" readonly />
+                    <textarea id="add-form-text" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"></textarea>
+                    <div class="add-form-row">
+                        <button id="add-form-button" class="add-form-button">Написать</button>
+                    </div>
+                </div>
+                `
+
+                this.buttonElement = document.getElementById("add-form-button")
+                this.listElement = document.getElementById("list")
+                this.textInputElement = document.getElementById("add-form-text")
+
+                this.handleInputListeners()
+                this.handlePostButton()
+            }
+            else {
+                this.appElement.innerHTML = `
+                <p>Вам нужно <a href="#" id="link-to-login">авторизоваться на сайте</a>!</p>
+                `
+                document.getElementById("link-to-login").addEventListener("click", () => {
+                    this.state.isAutorizing = true
+
+                    this.render()
+                })
+            }
+        }
+    },
+
     renderComments() {
         this.listElement.innerHTML = this.comments.map((comment, index) => {
             const classButton = comment.isLiked ? "-active-like" : ""
 
             return `<li class="comment" data-index="${index}">
           <div class="comment-header">
-            <div>${comment.name}</div>
+            <div>${comment.name.replaceAll("&", "&amp")
+                .replaceAll("<", "&lt")
+                .replaceAll(">", "&gt")
+                .replaceAll("''", "&quot")}</div>
             <div>${comment.date}</div>
           </div>
           <div class="comment-body">
@@ -138,8 +177,9 @@ export const DOM = {
         </li>`
         }).join("")
 
-        this.handleLikeButtons()
-        
+        if (this.userName) {
+            this.handleLikeButtons()
+
         // ответ на комментарий
         const commentTexts = document.querySelectorAll('.comment-text')
         commentTexts.forEach((textElement) => {
@@ -155,14 +195,10 @@ export const DOM = {
                 this.textInputElement.value = `> ${quote}: ${comment.name}`
                 this.textInputElement.focus()
             })
-        })
+        })}
     },
 
     start() {
-        this.buttonElement.disabled = true
-
         this.getComments()
-        this.handleInputListeners()
-        this.handlePostButton()
     },
 }
