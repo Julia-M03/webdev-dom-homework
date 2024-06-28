@@ -19,7 +19,8 @@ export const DOM = {
 
     getComments() {
         const loadingElement = document.getElementById("loading")
-        loadingElement.style.display = 'block'
+        // loadingElement.style.display = 'block'
+        console.log (loadingElement)
 
         API.getComments().then((responseData) => {
             this.comments = responseData.comments.map((comment) => {
@@ -34,7 +35,9 @@ export const DOM = {
 
             console.log(this.comments)
             this.render()
-            loadingElement.style.display = 'none'
+            // loadingElement.style.display = 'none'
+        }).catch( (error) => {
+            alert(error.message)
         })
     },
 
@@ -49,7 +52,9 @@ export const DOM = {
 
     handlePostButton() {
         this.buttonElement.addEventListener("click", () => {
+            console.log (this.textInputElement)
             if (this.textInputElement.value === "") {
+                
                 this.textInputElement.classList.add("errorinput")
                 return
             }
@@ -57,7 +62,7 @@ export const DOM = {
             this.state.isSending = true
             API.postComment(this.textInputElement.value)
                 .then(() => {
-                    return this.getComments()
+                     this.getComments ()
                 })
                 .then(() => {
                     this.textInputElement.value = ""
@@ -151,7 +156,10 @@ export const DOM = {
 
             return `<li class="comment" data-index="${index}">
           <div class="comment-header">
-            <div>${comment.name}</div>
+            <div>${comment.name.replaceAll("&", "&amp")
+                .replaceAll("<", "&lt")
+                .replaceAll(">", "&gt")
+                .replaceAll("''", "&quot")}</div>
             <div>${comment.date}</div>
           </div>
           <div class="comment-body">
@@ -169,7 +177,8 @@ export const DOM = {
         </li>`
         }).join("")
 
-        this.handleLikeButtons()
+        if (this.userName) {
+            this.handleLikeButtons()
 
         // ответ на комментарий
         const commentTexts = document.querySelectorAll('.comment-text')
@@ -186,7 +195,7 @@ export const DOM = {
                 this.textInputElement.value = `> ${quote}: ${comment.name}`
                 this.textInputElement.focus()
             })
-        })
+        })}
     },
 
     start() {

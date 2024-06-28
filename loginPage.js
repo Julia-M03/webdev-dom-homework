@@ -21,6 +21,8 @@ export const renderLogin = () => {
     const passwordInputElement = document.getElementById("password-input")
 
     buttonElement.addEventListener("click", () => {
+        if (!loginInputElement.value.trim() || !passwordInputElement.value.trim()) return alert("Заполнить поля")
+            
         API.login(loginInputElement.value, passwordInputElement.value)
             .then((data) => {
                 if (data === "error")
