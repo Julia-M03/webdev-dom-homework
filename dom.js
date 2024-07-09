@@ -1,5 +1,6 @@
 import { API } from "./api.js"
 import { renderLogin } from "./loginPage.js"
+import { format } from "date-fns"
 
 export const DOM = {
     appElement: document.getElementById("app"),
@@ -24,9 +25,11 @@ export const DOM = {
 
         API.getComments().then((responseData) => {
             this.comments = responseData.comments.map((comment) => {
+            const createDate = format(new Date(comment.date), 'yyyy-MM-dd hh.mm.ss')
+
                 return {
                     name: comment.author.name,
-                    date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    date: createDate,
                     comment: comment.text,
                     likesCounter: comment.likes,
                     isLiked: false,

@@ -1,7 +1,6 @@
 import { API } from "./api.js"
 import { DOM } from "./dom.js"
 
-
 export const renderLogin = () => {
     DOM.appElement.innerHTML = `
     <div class="container">
